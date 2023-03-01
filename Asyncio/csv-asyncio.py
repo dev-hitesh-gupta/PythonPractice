@@ -1,22 +1,34 @@
 import asyncio
-import csv
 import time
 
+import aiofiles as aiofiles
+
 start = time.time()
+lines = []
+fileReadGoing = True
 
 
-async def process_csv():
-    with open('sample.csv', newline='') as readFile, open('output.csv', "w+") as writeFile:
-        reader = csv.reader(readFile)
-        writer = csv.writer(writeFile)
-        for row in reader:
-            await write_csv(writer, row)
+async def read_csv():
+    global fileReadGoing
+    async with aiofiles.open('sample.csv') as f:
+        async for line in f:
+            lines.append(line)
+    fileReadGoing = False
 
 
-async def write_csv(writer, row):
-    writer.writerow(row)
+async def write_csv():
+    async with aiofiles.open('output.csv', "w+") as f:
+        while fileReadGoing:
+            print(lines)
+            while len(lines) > 0:
+                await f.write(lines.pop())
+            await asyncio.sleep(0)
 
 
-asyncio.run(process_csv())
+async def main():
+    await asyncio.gather(read_csv(), write_csv())
+
+
+asyncio.run(main())
 end = time.time()
 print(end - start)
